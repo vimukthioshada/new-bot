@@ -16,9 +16,11 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--single-process',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-features=site-per-process'
         ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome',
+        userDataDir: '/opt/render/.cache/puppeteer/userData'
     }
 });
 
@@ -162,13 +164,27 @@ client.on('message', async (msg) => {
     }
 });
 
-// Error handling
-client.on('error', (error) => {
+// Error handling with retry logic
+client.on('error', async (error) => {
     console.error('Client error:', error);
+    if (error.message.includes('Session closed')) {
+        console.log('Retrying client initialization...');
+        await client.destroy();
+        await client.initialize();
+    }
 });
 
-// Initialize client
-client.initialize();
+// Initialize client with retry
+async function initializeClient() {
+    try {
+        await client.initialize();
+    } catch (error) {
+        console.error('Initialization failed:', error);
+        setTimeout(initializeClient, 5000); // Retry after 5 seconds
+    }
+}
+
+initializeClient();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
