@@ -1,20 +1,17 @@
-# Use official Node.js image
+# Use a stable node version
 FROM node:18-alpine
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package.json and lock files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
-# Copy remaining app files
+# Copy all remaining files
 COPY . .
-
-# Expose (Render ignores this but it's good practice)
-EXPOSE 3000
 
 # Start the bot
 CMD ["npm", "start"]
